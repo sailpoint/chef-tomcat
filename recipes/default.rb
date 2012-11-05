@@ -19,6 +19,8 @@
 
 include_recipe "java"
 
+Chef::Log.debug "Tomcat base version: #{node['tomcat']['base_version']}" 
+
 node['tomcat'].each{|k,v| node['tomcat'][k] = v.gsub("tomcat6", "tomcat#{node['tomcat']['base_version']}") if v.kind_of?(String) }
 
 tomcat_pkgs = value_for_platform(
@@ -30,6 +32,7 @@ tomcat_pkgs = value_for_platform(
   },
   "default" => ["tomcat#{node["tomcat"]["base_version"]}"]
 )
+
 tomcat_pkgs.each do |pkg|
   package pkg do
     action :install
@@ -83,7 +86,7 @@ when "centos","redhat","fedora"
     owner "root"
     group "root"
     mode "0644"
-    notifies :restart, resources(:service => "tomcat")
+    notifies :restart, "service[tomcat]"
   end
 else  
   template "/etc/default/tomcat#{node["tomcat"]["base_version"]}" do
@@ -91,7 +94,7 @@ else
     owner "root"
     group "root"
     mode "0644"
-    notifies :restart, resources(:service => "tomcat")
+    notifies :restart, "service[tomcat]"
   end
 end
 
@@ -100,5 +103,16 @@ template "/etc/tomcat#{node["tomcat"]["base_version"]}/server.xml" do
   owner "root"
   group "root"
   mode "0644"
-  notifies :restart, resources(:service => "tomcat")
+  notifies :restart, "service[tomcat]"
+end
+
+service "tomcat" do
+  service_name "tomcat#{node["tomcat"]["base_version"]}"
+  case node["platform"]
+  when "centos","redhat","fedora"
+    supports :restart => true, :status => true
+  when "debian","ubuntu"
+    supports :restart => true, :reload => true, :status => true
+  end
+  action [:enable, :start]
 end

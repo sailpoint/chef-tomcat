@@ -23,6 +23,7 @@ default["tomcat"]["ajp_port"] = 8009
 default["tomcat"]["java_options"] = "-Xmx128M -Djava.awt.headless=true"
 default["tomcat"]["use_security_manager"] = false
 default["tomcat"]["redis"] = false
+default["tomcat"]["authbind"] = "no"
 
 case platform
 when "centos","redhat","fedora"

@@ -40,8 +40,6 @@ tomcat_pkgs.each do |pkg|
 end
 
 if node["tomcat"]["redis"]
-  include_recipe "redis::failover_client"
-  
   remote_file "/usr/share/tomcat#{node["tomcat"]["base_version"]}/lib/jedis-2.1.0.jar" do
     source "https://github.com/downloads/xetorthio/jedis/jedis-2.1.0.jar"
     mode "0644"

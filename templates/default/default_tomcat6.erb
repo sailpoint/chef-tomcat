@@ -13,7 +13,7 @@ TOMCAT<%= node["tomcat"]["base_version"] %>_USER=<%= node["tomcat"]["user"] %>
 TOMCAT<%= node["tomcat"]["base_version"] %>_GROUP=<%= node["tomcat"]["user"] %>
 
 # The home directory of the Java development kit (JDK). You need at least
-# JDK version 1.5. If JAVA_HOME is not set, some common directories for 
+# JDK version 1.5. If JAVA_HOME is not set, some common directories for
 # OpenJDK, the Sun JDK, and various J2SE 1.5 versions are tried.
 JAVA_HOME=<%= node["java"]["java_home"] %>
 
@@ -62,3 +62,9 @@ JVM_TMP=<%= node["tomcat"]["tmp_dir"] %>
 # NOTE: authbind works only with IPv4.  Do not enable it when using IPv6.
 # (yes/no, default: no)
 AUTHBIND=<%= node["tomcat"]["authbind"] %>
+
+# JVM parameters passed only for start and run commands
+CATALINA_OPTS="<%= node["tomcat"]["catalina_options"] %>"
+
+# Endorse .jar files in this directory
+JAVA_ENDORSED_DIRS="<%= node["tomcat"]["endorsed_dir"] %>"

@@ -24,7 +24,7 @@ include_recipe "java"
 
 Chef::Log.debug "Tomcat base version: #{node['tomcat']['base_version']}" 
 
-node['tomcat'].each{|k,v| node['tomcat'][k] = v.gsub("tomcat6", "tomcat#{node['tomcat']['base_version']}") if v.kind_of?(String) }
+node['tomcat'].each{|k,v| node.set['tomcat'][k] = v.gsub("tomcat6", "tomcat#{node['tomcat']['base_version']}") if v.kind_of?(String) }
 
 tomcat_pkgs = value_for_platform(
   ["debian","ubuntu"] => {

@@ -74,16 +74,13 @@ if node["tomcat"]["redis"]
     notifies :restart, "service[tomcat]"
   end
   
-  if node["tomcat"]["base_version"] == "6"
-    redis_manager_filename = "tomcat-redis-session-manager-1.0.jar"
-    redis_manager_checksum = "2d1eba99f18a9e5c930837fe4826ef8ea29237601ef54a0494c74989f507398b"
-  else
-    redis_manager_filename = "tomcat-redis-session-manager-1.1.jar"
-    redis_manager_checksum = "da9f8d44f0bf40327d47ca54596008bd14c0893503e3eadcea97fdc72da8a0e0"
-  end
+  redis_manager_filename = "#{node[:tomcat][:redis_session_manager][:filename]}"
+  redis_manager_checksum = "#{node[:tomcat][:redis_session_manager][:checksum]}"
+  redis_manager_url      = "#{node[:tomcat][:redis_session_manager][:url]}"
+
   remote_file "/usr/share/tomcat#{node["tomcat"]["base_version"]}/lib/#{redis_manager_filename}" do
-    source "https://github.com/downloads/jcoleman/tomcat-redis-session-manager/#{redis_manager_filename}"
-    mode "0644"
+    source "#{redis_manager_url}/#{redis_manager_filename}"
+    mode 0644
     checksum redis_manager_checksum
     owner "tomcat#{node["tomcat"]["base_version"]}"
     group "tomcat#{node["tomcat"]["base_version"]}"

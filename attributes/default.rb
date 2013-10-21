@@ -44,6 +44,16 @@ default["tomcat"]["certificate_dn"] = "cn=localhost"
 default["tomcat"]["loglevel"] = "INFO"
 default["tomcat"]["tomcat_auth"] = "true"
 
+if node["tomcat"]["base_version"] == "6"
+  default["tomcat"]["redis_session_manager"]["filename"] = "tomcat-redis-session-manager-1.0.jar"
+  default["tomcat"]["redis_session_manager"]["checksum"] = "2d1eba99f18a9e5c930837fe4826ef8ea29237601ef54a0494c74989f507398b"
+  default["tomcat"]["redis_session_manager"]["url"] = "https://github.com/downloads/jcoleman/tomcat-redis-session-manager"
+else
+  default["tomcat"]["redis_session_manager"]["filename"] = "tomcat-redis-session-manager-1.2.jar"
+  default["tomcat"]["redis_session_manager"]["checksum"] = "a0b6d02cd7e5af624f0fd3c4e35d8a3f13b3c581"
+  default["tomcat"]["redis_session_manager"]["url"] = "https://s3.amazonaws.com/sptcbu-software-images/builds/misc"
+end 
+
 case node['platform']
 when "centos","redhat","fedora"
   default["tomcat"]["user"] = "tomcat"

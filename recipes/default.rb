@@ -66,9 +66,8 @@ end
 
 if node["tomcat"]["redis"]
   remote_file "/usr/share/tomcat#{node["tomcat"]["base_version"]}/lib/jedis-2.1.0.jar" do
-    source "https://github.com/downloads/xetorthio/jedis/jedis-2.1.0.jar"
+    source "https://s3.amazonaws.com/#{node['s3_bucket']}/builds/misc/jedis-2.1.0.jar"
     mode "0644"
-    checksum "9f26d25f65d71b89756969a0868df17d5beab8a4631f8076441edf890a17b983"
     owner "tomcat#{node["tomcat"]["base_version"]}"
     group "tomcat#{node["tomcat"]["base_version"]}"
     notifies :restart, "service[tomcat]"

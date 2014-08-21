@@ -20,31 +20,36 @@
 # required for the secure_password method from the openssl cookbook
 ::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
 
-include_recipe "java"
+include_recipe 'java'
 
 Chef::Log.debug "Tomcat base version: #{node['tomcat']['base_version']}" 
 
 node['tomcat'].each{|k,v| node.set['tomcat'][k] = v.gsub("tomcat6", "tomcat#{node['tomcat']['base_version']}") if v.kind_of?(String) }
 
 tomcat_pkgs = value_for_platform(
-  ["debian","ubuntu"] => {
-    "default" => ["tomcat#{node["tomcat"]["base_version"]}","tomcat#{node["tomcat"]["base_version"]}-admin"]
+  ['smartos'] => {
+    'default' => ['apache-tomcat'],
   },
-  ["centos","redhat","fedora"] => {
-    "default" => ["tomcat#{node["tomcat"]["base_version"]}","tomcat#{node["tomcat"]["base_version"]}-admin-webapps"]
-  },
-  "default" => ["tomcat#{node["tomcat"]["base_version"]}"]
-)
+  'default' => ["tomcat#{node['tomcat']['base_version']}"]
+  )
+if node['tomcat']['deploy_manager_apps']
+  tomcat_pkgs << value_for_platform(
+    %w{ debian  ubuntu } => {
+      'default' => "tomcat#{node['tomcat']['base_version']}-admin",
+    },    
+    %w{ centos redhat fedora amazon scientific oracle } => {
+      'default' => "tomcat#{node['tomcat']['base_version']}-admin-webapps",
+    }
+    )
+end
+
+tomcat_pkgs.compact!
 
 tomcat_pkgs.each do |pkg|
   package pkg do
     action :install
+    version node['tomcat']['base_version'].to_s if platform_family?('smartos')
   end
-end
-
-directory node['tomcat']['endorsed_dir'] do
-  mode "0755"
-  recursive true
 end
 
 unless node['tomcat']['deploy_manager_apps']
@@ -101,92 +106,52 @@ end
 node.set_unless['tomcat']['keystore_password'] = secure_password
 node.set_unless['tomcat']['truststore_password'] = secure_password
 
-unless node['tomcat']["truststore_file"].nil?
-  java_options = node['tomcat']['java_options'].to_s
-  java_options << " -Djavax.net.ssl.trustStore=#{node["tomcat"]["config_dir"]}/#{node["tomcat"]["truststore_file"]}"
-  java_options << " -Djavax.net.ssl.trustStorePassword=#{node["tomcat"]["truststore_password"]}"
-
-  node.set['tomcat']['java_options'] = java_options
-end
-
-case node["platform"]
-when "centos","redhat","fedora"
-  template "/etc/sysconfig/tomcat#{node["tomcat"]["base_version"]}" do
-    source "sysconfig_tomcat6.erb"
-    owner "root"
-    group "root"
-    mode "0644"
-    notifies :restart, "service[tomcat]"
-  end
-else
-  template "/etc/default/tomcat#{node["tomcat"]["base_version"]}" do
-    source "default_tomcat6.erb"
-    owner "root"
-    group "root"
-    mode "0644"
-    notifies :restart, "service[tomcat]"
+if node['tomcat']['run_base_instance']
+  tomcat_instance "base" do
+    port node['tomcat']['port']
+    proxy_port node['tomcat']['proxy_port']
+    ssl_port node['tomcat']['ssl_port']
+    ssl_proxy_port node['tomcat']['ssl_proxy_port']
+    ajp_port node['tomcat']['ajp_port']
+    shutdown_port node['tomcat']['shutdown_port']
   end
 end
 
-template "#{node["tomcat"]["config_dir"]}/server.xml" do
-  source "server.xml.erb"
-  owner "root"
-  group "root"
-  mode "0644"
-  notifies :restart, "service[tomcat]"
-end
-
-template "/etc/tomcat#{node['tomcat']['base_version']}/logging.properties" do
-  source "logging.properties.erb"
-  owner "root"
-  group "root"
-  mode "0644"
-  notifies :restart, "service[tomcat]"
-end
-
-unless node['tomcat']["ssl_cert_file"].nil?
-  cookbook_file "#{node['tomcat']['config_dir']}/#{node['tomcat']['ssl_cert_file']}" do
-    mode "0644"
-  end
-  cookbook_file "#{node['tomcat']['config_dir']}/#{node['tomcat']['ssl_key_file']}" do
-    mode "0644"
-  end
-  cacerts = ""
-  node['tomcat']['ssl_chain_files'].each do |cert|
-    cookbook_file "#{node['tomcat']['config_dir']}/#{cert}" do
-      mode "0644"
-    end
-    cacerts = cacerts + "#{cert} "
-  end
-  script "create_tomcat_keystore" do
-    interpreter "bash"
-    cwd node['tomcat']['config_dir']
-    code <<-EOH
-      cat #{cacerts} > cacerts.pem
-      openssl pkcs12 -export \
-       -inkey #{node['tomcat']['ssl_key_file']} \
-       -in #{node['tomcat']['ssl_cert_file']} \
-       -chain \
-       -CAfile cacerts.pem \
-       -password pass:#{node['tomcat']['keystore_password']} \
-       -out #{node['tomcat']['keystore_file']}
-    EOH
-    notifies :restart, "service[tomcat]"
-    creates "#{node['tomcat']['config_dir']}/#{node['tomcat']['keystore_file']}"
-  end
-else
-  execute "Create Tomcat SSL certificate" do
-    group node['tomcat']['group']
-    command "#{node['tomcat']['keytool']} -genkeypair -keystore \"#{node['tomcat']['config_dir']}/#{node['tomcat']['keystore_file']}\" -storepass \"#{node['tomcat']['keystore_password']}\" -keypass \"#{node['tomcat']['keystore_password']}\" -dname \"#{node['tomcat']['certificate_dn']}\""
-    umask 0007
-    creates "#{node['tomcat']['config_dir']}/#{node['tomcat']['keystore_file']}"
-    action :run
-    notifies :restart, "service[tomcat]"
-  end
-end
-
-unless node['tomcat']["truststore_file"].nil?
-  cookbook_file "#{node['tomcat']['config_dir']}/#{node['tomcat']['truststore_file']}" do
-    mode "0644"
+node['tomcat']['instances'].each do |name, attrs|
+  tomcat_instance "#{name}" do
+    port attrs['port']
+    proxy_port attrs['proxy_port']
+    ssl_port attrs['ssl_port']
+    ssl_proxy_port attrs['ssl_proxy_port']
+    ajp_port attrs['ajp_port']
+    shutdown_port attrs['shutdown_port']
+    config_dir attrs['config_dir']
+    log_dir attrs['log_dir']
+    work_dir attrs['work_dir']
+    context_dir attrs['context_dir']
+    webapp_dir attrs['webapp_dir']
+    catalina_options attrs['catalina_options']
+    java_options attrs['java_options']
+    use_security_manager attrs['use_security_manager']
+    authbind attrs['authbind']
+    max_threads attrs['max_threads']
+    ssl_max_threads attrs['ssl_max_threads']
+    ssl_cert_file attrs['ssl_cert_file']
+    ssl_key_file attrs['ssl_key_file']
+    ssl_chain_files attrs['ssl_chain_files']
+    keystore_file attrs['keystore_file']
+    keystore_type attrs['keystore_type']
+    truststore_file attrs['truststore_file']
+    truststore_type attrs['truststore_type']
+    certificate_dn attrs['certificate_dn']
+    loglevel attrs['loglevel']
+    tomcat_auth attrs['tomcat_auth']
+    user attrs['user']
+    group attrs['group']
+    home attrs['home']
+    base attrs['base']
+    tmp_dir attrs['tmp_dir']
+    lib_dir attrs['lib_dir']
+    endorsed_dir attrs['endorsed_dir']
   end
 end

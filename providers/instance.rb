@@ -54,27 +54,19 @@ action :configure do
       end
     end
 
-    # Don't make a separate home, just link to base
-    if new_resource.home != new_resource.base
-      link "#{new_resource.home}" do
-        to "#{new_resource.base}"
-      end
+    # Don't make a separate home, just link to base home directory
+    link "#{new_resource.home}" do
+      to "#{node["tomcat"]["home"]}"
     end
 
     # config_dir needs symlinks to the files we're not going to create
-    ['catalina.policy', 'catalina.properties', 'context.xml',
+    ['policy.d', 'catalina.properties', 'context.xml',
      'tomcat-users.xml', 'web.xml'].each do |file|
       link "#{new_resource.config_dir}/#{file}" do
         to "#{node['tomcat']['config_dir']}/#{file}"
       end
     end
-
-    # The base also needs a bunch of to symlinks inside it
-    ['bin', 'lib'].each do |dir|
-      link "#{new_resource.base}/#{dir}" do
-        to "#{node['tomcat']['base']}/#{dir}"
-      end
-    end
+    
     {'conf' => 'config_dir', 'logs' => 'log_dir', 'temp' => 'tmp_dir',
      'work' => 'work_dir', 'webapps' => 'webapp_dir'}.each do |name, attr|
       link "#{new_resource.base}/#{name}" do

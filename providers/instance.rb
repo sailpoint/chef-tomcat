@@ -60,8 +60,7 @@ action :configure do
     end
 
     # config_dir needs symlinks to the files we're not going to create
-    ['policy.d', 'catalina.properties', 'context.xml',
-     'tomcat-users.xml', 'web.xml'].each do |file|
+    ['policy.d', 'tomcat-users.xml', 'web.xml'].each do |file|
       link "#{new_resource.config_dir}/#{file}" do
         to "#{node['tomcat']['config_dir']}/#{file}"
       end
@@ -113,7 +112,7 @@ action :configure do
       owner 'root'
       group 'root'
       mode '0644'
-      notifies :restart, "service[#{instance}]"
+      #notifies :restart, "service[#{instance}]", :immediately
     end
   when 'smartos'
     # SmartOS doesn't support multiple instances
@@ -142,7 +141,7 @@ action :configure do
       owner 'root'
       group 'root'
       mode '0644'
-      notifies :restart, "service[#{instance}]"
+      #notifies :restart, "service[#{instance}]", :immediately
     end
   end
 
@@ -165,7 +164,7 @@ action :configure do
     owner 'root'
     group 'root'
     mode '0644'
-    notifies :restart, "service[#{instance}]"
+    #notifies :restart, "service[#{instance}]", :immediately
   end
 
   template "#{new_resource.config_dir}/logging.properties" do
@@ -173,7 +172,7 @@ action :configure do
     owner 'root'
     group 'root'
     mode '0644'
-    notifies :restart, "service[#{instance}]"
+    #notifies :restart, "service[#{instance}]", :immediately
   end
 
   if new_resource.ssl_cert_file.nil?
@@ -190,7 +189,7 @@ action :configure do
       umask 0007
       creates "#{new_resource.config_dir}/#{new_resource.keystore_file}"
       action :run
-      notifies :restart, "service[#{instance}]"
+      #notifies :restart, "service[#{instance}]", :immediately
     end
   else
     script "create_keystore-#{instance}" do
@@ -207,7 +206,7 @@ action :configure do
          -password pass:#{node['tomcat']['keystore_password']} \
          -out #{new_resource.keystore_file}
       EOH
-      notifies :restart, "service[tomcat]"
+      #notifies :restart, "service[tomcat]", :immediately
     end
 
     cookbook_file "#{new_resource.config_dir}/#{new_resource.ssl_cert_file}" do
@@ -249,8 +248,7 @@ action :configure do
     else
       service_name "#{instance}"
     end
-    action [:start, :enable]
-    notifies :run, "execute[wait for #{instance}]", :immediately
+    action [:restart, :enable]
     retries 4
     retry_delay 30
   end

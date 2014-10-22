@@ -112,7 +112,6 @@ action :configure do
       owner 'root'
       group 'root'
       mode '0644'
-      #notifies :restart, "service[#{instance}]", :immediately
     end
   when 'smartos'
     # SmartOS doesn't support multiple instances
@@ -141,7 +140,6 @@ action :configure do
       owner 'root'
       group 'root'
       mode '0644'
-      #notifies :restart, "service[#{instance}]", :immediately
     end
   end
 
@@ -164,7 +162,6 @@ action :configure do
     owner 'root'
     group 'root'
     mode '0644'
-    #notifies :restart, "service[#{instance}]", :immediately
   end
 
   template "#{new_resource.config_dir}/logging.properties" do
@@ -172,7 +169,6 @@ action :configure do
     owner 'root'
     group 'root'
     mode '0644'
-    #notifies :restart, "service[#{instance}]", :immediately
   end
 
   if new_resource.ssl_cert_file.nil?
@@ -189,7 +185,6 @@ action :configure do
       umask 0007
       creates "#{new_resource.config_dir}/#{new_resource.keystore_file}"
       action :run
-      #notifies :restart, "service[#{instance}]", :immediately
     end
   else
     script "create_keystore-#{instance}" do
@@ -206,7 +201,6 @@ action :configure do
          -password pass:#{node['tomcat']['keystore_password']} \
          -out #{new_resource.keystore_file}
       EOH
-      #notifies :restart, "service[tomcat]", :immediately
     end
 
     cookbook_file "#{new_resource.config_dir}/#{new_resource.ssl_cert_file}" do

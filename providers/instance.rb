@@ -242,7 +242,7 @@ action :configure do
     else
       service_name "#{instance}"
     end
-    action [:restart, :enable]
+    action [:enable]
     retries 4
     retry_delay 30
   end

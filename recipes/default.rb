@@ -75,7 +75,6 @@ if node["tomcat"]["redis"]
     mode "0644"
     owner "tomcat#{node["tomcat"]["base_version"]}"
     group "tomcat#{node["tomcat"]["base_version"]}"
-    notifies :restart, "service[tomcat]"
   end
   
   redis_manager_filename = "#{node[:tomcat][:redis_session_manager][:filename]}"
@@ -88,7 +87,6 @@ if node["tomcat"]["redis"]
     checksum redis_manager_checksum
     owner "tomcat#{node["tomcat"]["base_version"]}"
     group "tomcat#{node["tomcat"]["base_version"]}"
-    notifies :restart, "service[tomcat]"
   end
 end
 
@@ -100,7 +98,7 @@ service "tomcat" do
   when "debian","ubuntu"
     supports :restart => true, :reload => false, :status => true
   end
-  action [:enable, :start]
+  action [:enable]
 end
 
 node.set_unless['tomcat']['keystore_password'] = secure_password

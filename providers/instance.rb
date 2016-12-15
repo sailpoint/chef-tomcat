@@ -164,13 +164,6 @@ action :configure do
     mode '0644'
   end
 
-  template "#{new_resource.config_dir}/logging.properties" do
-    source 'logging.properties.erb'
-    owner 'root'
-    group 'root'
-    mode '0644'
-  end
-
   if new_resource.ssl_cert_file.nil?
     execute 'Create Tomcat SSL certificate' do
       group new_resource.group
